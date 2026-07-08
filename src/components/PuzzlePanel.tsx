@@ -570,7 +570,7 @@ export default function PuzzlePanel() {
                   padding: '10px 12px',
                 }}
               >
-                {isAutoRunning ? `計算中... ${countdown}s` : '自動拼圖'}
+                {isAutoRunning ? `計算中... ${countdown}s` : '開始計算'}
               </button>
               {isAutoRunning && (
                 <button

@@ -2,6 +2,8 @@ import { useGame } from '../utils/GameContext';
 import { Tool, GamePhase } from '../types';
 import type { GridSize } from '../types';
 import { exportToFile, importFromFile } from '../utils/storage';
+import MdiIcon from './MdiIcon';
+import { mdiPencil, mdiEraser, mdiSelectDrag, mdiSelectRemove } from '@mdi/js';
 
 export default function EditPanel() {
   const { state, dispatch } = useGame();
@@ -33,11 +35,11 @@ export default function EditPanel() {
   };
 
   const sizes: GridSize[] = [9, 12, 16, 20];
-  const tools: { tool: Tool; label: string }[] = [
-    { tool: Tool.SingleSelect, label: '單格選中' },
-    { tool: Tool.SingleDeselect, label: '單格取消' },
-    { tool: Tool.RectSelect, label: '方形選中' },
-    { tool: Tool.RectDeselect, label: '方形取消' },
+  const tools: { tool: Tool; icon: string; title: string }[] = [
+    { tool: Tool.SingleSelect, icon: mdiPencil, title: '單格選中' },
+    { tool: Tool.SingleDeselect, icon: mdiEraser, title: '單格取消' },
+    { tool: Tool.RectSelect, icon: mdiSelectDrag, title: '方形選中' },
+    { tool: Tool.RectDeselect, icon: mdiSelectRemove, title: '方形取消' },
   ];
 
   return (
@@ -72,22 +74,24 @@ export default function EditPanel() {
       {/* 選取工具 */}
       <div>
         <h3 style={{ margin: '0 0 6px 0', fontSize: 13 }}>工具</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: 6 }}>
-          {tools.map(({ tool, label }) => (
+        <div style={{ display: 'flex', gap: 6 }}>
+          {tools.map(({ tool, icon, title }) => (
             <button
               key={tool}
               onClick={() => dispatch({ type: 'SET_TOOL', tool })}
+              title={title}
               style={{
-                padding: '8px 10px',
+                padding: 8,
                 backgroundColor: selectedTool === tool ? '#4a90d9' : '#eee',
-                color: selectedTool === tool ? 'white' : '#333',
                 border: 'none',
                 borderRadius: 4,
                 cursor: 'pointer',
-                fontWeight: selectedTool === tool ? 'bold' : 'normal',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              {label}
+              <MdiIcon path={icon} size={22} color={selectedTool === tool ? 'white' : '#333'} />
             </button>
           ))}
         </div>

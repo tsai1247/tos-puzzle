@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { PuzzleColor, PuzzleShape } from '../types';
 import type { Coord } from '../types';
 import { getShapeCells, rotateCells, COLOR_MAP, BORDER_COLOR_MAP } from '../utils/puzzleData';
+import MdiIcon from './MdiIcon';
+import { mdiShuriken } from '@mdi/js';
 
 interface PuzzlePaletteProps {
   onSpawnPiece: (shape: PuzzleShape, color: PuzzleColor, rotation: number) => void;
@@ -30,13 +32,13 @@ function getPiecesForColor(color: PuzzleColor): PieceEntry[] {
   ];
 }
 
-const TABS: { color: PuzzleColor; label: string }[] = [
-  { color: PuzzleColor.Blue, label: '藍' },
-  { color: PuzzleColor.Red, label: '紅' },
-  { color: PuzzleColor.Green, label: '綠' },
-  { color: PuzzleColor.Yellow, label: '黃' },
-  { color: PuzzleColor.Purple, label: '紫' },
-  { color: PuzzleColor.Gray, label: '萬能' },
+const TABS: { color: PuzzleColor; iconColor: string }[] = [
+  { color: PuzzleColor.Blue, iconColor: COLOR_MAP[PuzzleColor.Blue] },
+  { color: PuzzleColor.Red, iconColor: COLOR_MAP[PuzzleColor.Red] },
+  { color: PuzzleColor.Green, iconColor: COLOR_MAP[PuzzleColor.Green] },
+  { color: PuzzleColor.Yellow, iconColor: COLOR_MAP[PuzzleColor.Yellow] },
+  { color: PuzzleColor.Purple, iconColor: COLOR_MAP[PuzzleColor.Purple] },
+  { color: PuzzleColor.Gray, iconColor: COLOR_MAP[PuzzleColor.Gray] },
 ];
 
 function PiecePreview({ cells, color, size = 14 }: { cells: Coord[]; color: PuzzleColor; size?: number }) {
@@ -100,18 +102,20 @@ export default function PuzzlePalette({ onSpawnPiece }: PuzzlePaletteProps) {
             key={tab.color}
             onClick={() => setActiveTab(tab.color)}
             style={{
-              padding: '6px 10px',
+              padding: '6px 8px',
               border: 'none',
               borderRadius: '4px 4px 0 0',
               cursor: 'pointer',
-              backgroundColor: activeTab === tab.color ? COLOR_MAP[tab.color] : '#e8e8e8',
-              color: activeTab === tab.color ? 'white' : '#555',
-              fontWeight: activeTab === tab.color ? 'bold' : 'normal',
-              fontSize: 13,
-              opacity: activeTab === tab.color ? 1 : 0.8,
+              backgroundColor: activeTab === tab.color ? '#f0f0f0' : '#e8e8e8',
+              borderBottom: activeTab === tab.color ? '3px solid ' + tab.iconColor : '3px solid transparent',
+              opacity: activeTab === tab.color ? 1 : 0.6,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
+            title={tab.color}
           >
-            {tab.label}
+            <MdiIcon path={mdiShuriken} size={20} color={tab.iconColor} />
           </button>
         ))}
       </div>

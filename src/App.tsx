@@ -15,7 +15,7 @@ function AppContent() {
       maxWidth: 1200,
       margin: '0 auto',
     }}>
-      <h1 style={{ margin: '0 0 12px', fontSize: 'clamp(18px, 4vw, 22px)' }}>🧩 拼圖遊戲</h1>
+      <h1 style={{ margin: '0 0 12px', fontSize: 'clamp(18px, 4vw, 22px)' }}>🧩 神魔之塔工作站拼圖攻略</h1>
 
       {phase === GamePhase.Edit && (
         <div style={{
