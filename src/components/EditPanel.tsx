@@ -41,6 +41,26 @@ const EXAMPLE_CATEGORIES = [
       { id: 'resource_sat', label: '資源藍圖（星期六）', file: 'onetime/resource_sat.sol' },
     ],
   },
+  {
+    id: 'memorial_furniture',
+    label: '紀念藍圖(傢俱)',
+    items: [
+      { id: 'miyuki_doll', label: '司波深雪玩偶', file: 'memorial_furniture/miyuki_doll.sol' },
+      { id: 'tatsuya_desk', label: '司波達也的書桌', file: 'memorial_furniture/tatsuya_desk.sol' },
+      { id: 'tatsuya_pc', label: '司波達也的電腦', file: 'memorial_furniture/tatsuya_pc.sol' },
+      { id: 'angelina_poster', label: '安潔莉娜海報', file: 'memorial_furniture/angelina_poster.sol' },
+      { id: 'coffee_set', label: '手沖咖啡套組', file: 'memorial_furniture/coffee_set.sol' },
+      { id: 'lab_door', label: '研究室門', file: 'memorial_furniture/lab_door.sol' },
+    ],
+  },
+  {
+    id: 'memorial_misc',
+    label: '紀念藍圖(桌布、勳章)',
+    items: [
+      { id: 'medal', label: '紀念勳章藍圖', file: 'memorial_misc/medal.sol' },
+      { id: 'wallpaper', label: '紀念桌布藍圖', file: 'memorial_misc/wallpaper.sol' },
+    ],
+  },
 ];
 
 // 快取已載入的範例資料
