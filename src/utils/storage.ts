@@ -37,13 +37,17 @@ export function loadFromLocalStorage(key: string): EncodedData | null {
   return decodeData(encoded);
 }
 
-export function exportToFile(gridSize: GridSize, grid: CellState[][], placedPieces?: PlacedPiece[]): void {
+export function exportToFile(gridSize: GridSize, grid: CellState[][], placedPieces?: PlacedPiece[], ext: string = '.pzl'): void {
+  const defaultName = `puzzle_${gridSize}x${gridSize}`;
+  const fileName = prompt('輸入檔名', defaultName);
+  if (!fileName) return; // 使用者取消
+
   const encoded = encodeData(gridSize, grid, placedPieces);
-  const blob = new Blob([encoded], { type: 'text/plain' });
+  const blob = new Blob([encoded], { type: 'application/octet-stream' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `puzzle_${gridSize}x${gridSize}_${Date.now()}.puzzle`;
+  a.download = `${fileName}${ext}`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -52,7 +56,7 @@ export function importFromFile(): Promise<EncodedData> {
   return new Promise((resolve, reject) => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.puzzle';
+    input.accept = '.pzl,.sol';
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) {

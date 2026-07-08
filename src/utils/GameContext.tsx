@@ -22,7 +22,7 @@ function loadInitialState(): GameState {
     grid: createGrid(9),
     placedPieces: [],
     selectedTool: Tool.SingleSelect,
-    autoConditions: { useBasicShapes: true, useBig7: false, useWild: false },
+    autoConditions: { useBasicShapes: true, useBig7: false, useWild: false, maxWildCells: 8 },
     autoResults: [],
     selectedAutoResult: null,
   };

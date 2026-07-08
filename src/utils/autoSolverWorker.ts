@@ -1,5 +1,8 @@
 // Web Worker for auto-solving puzzles using Dancing Links (DLX)
-// Accepts a seed to shuffle placement order for parallel diversity
+// Optimizations:
+// 1. Wild pieces limited to max 8 cells total
+// 2. Early stop if best result is 0 wild cells and no improvement for 10s
+// 3. Deduplicate solutions by placement fingerprint
 
 import { CellState, PuzzleColor, PuzzleShape } from '../types';
 import type { Coord, PlacedPiece, AutoConditions, AutoResult } from '../types';
@@ -10,7 +13,7 @@ interface WorkerMessage {
   gridSize: number;
   conditions: AutoConditions;
   timeLimitMs: number;
-  seed: number; // different seed = different search order
+  seed: number;
 }
 
 // ===== Seeded random shuffle =====
@@ -286,6 +289,18 @@ function generateAllPlacements(
   return placements;
 }
 
+// Generate a fingerprint for a solution to detect duplicates
+function solutionFingerprint(solutionRows: number[], placements: Placement[]): string {
+  // Sort placement coordinates to create a canonical representation
+  const parts: string[] = [];
+  for (const rowIdx of solutionRows) {
+    const p = placements[rowIdx];
+    // Use shape+rotation+origin as identifier for each piece placement
+    parts.push(`${p.option.shape}:${p.option.rotation}:${p.origin.x},${p.origin.y}`);
+  }
+  return parts.sort().join('|');
+}
+
 self.onmessage = (e: MessageEvent<WorkerMessage>) => {
   const { grid, gridSize, conditions, timeLimitMs, seed } = e.data;
 
@@ -304,7 +319,6 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
   const targetSet = new Map<string, number>();
   targets.forEach((t, i) => targetSet.set(`${t.x},${t.y}`, i));
 
-  // Generate and shuffle placements based on seed
   const rng = seededRandom(seed);
   const placements = shuffle(generateAllPlacements(targetSet, gridSize, pieceOptions), rng);
 
@@ -313,7 +327,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     return;
   }
 
-  // Build DLX matrix with shuffled row order
+  // Build DLX matrix
   const numColumns = targets.length;
   const dlx = new DLX(numColumns);
 
@@ -321,7 +335,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     dlx.addRow(i, placements[i].coveredIndices);
   }
 
-  // Solve
+  // Solve state
   let topResults: AutoResult[] = [];
   const maxKeep = 10;
   const startTime = Date.now();
@@ -329,24 +343,54 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
   let timeUp = false;
   let lastUpdateTime = 0;
   let hasNewResults = false;
+  let lastImprovementTime = startTime;
+  const MAX_WILD_CELLS = conditions.maxWildCells || 8;
 
-  function isTimeUp(): boolean {
+  // Deduplication set
+  const seenFingerprints = new Set<string>();
+
+  // Current wild cell count during search (for pruning)
+  let currentWildCells = 0;
+
+  function shouldStop(): boolean {
     if (timeUp) return true;
     checkCounter++;
     if (checkCounter % 200 === 0) {
-      if (Date.now() - startTime >= timeLimitMs) {
+      const now = Date.now();
+      if (now - startTime >= timeLimitMs) {
         timeUp = true;
         return true;
+      }
+      // Early stop: best is 0 wild + 10s no improvement
+      if (topResults.length > 0 && topResults[0].wildCellCount === 0) {
+        if (now - lastImprovementTime >= 10000) {
+          timeUp = true;
+          return true;
+        }
       }
     }
     return false;
   }
 
   function addResult(solutionRows: number[]) {
-    const pieces: PlacedPiece[] = [];
+    // Check wild cell constraint
     let wildCellCount = 0;
     let big7Count = 0;
+    for (const rowIdx of solutionRows) {
+      const p = placements[rowIdx];
+      if (p.option.isWild) wildCellCount += p.option.size;
+      if (p.option.isBig7) big7Count++;
+    }
 
+    // Constraint: max 8 wild cells
+    if (wildCellCount > MAX_WILD_CELLS) return;
+
+    // Deduplication
+    const fp = solutionFingerprint(solutionRows, placements);
+    if (seenFingerprints.has(fp)) return;
+    seenFingerprints.add(fp);
+
+    const pieces: PlacedPiece[] = [];
     for (const rowIdx of solutionRows) {
       const placement = placements[rowIdx];
       pieces.push({
@@ -358,8 +402,6 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
         rotation: placement.option.rotation,
         origin: placement.origin,
       });
-      if (placement.option.isWild) wildCellCount += placement.option.size;
-      if (placement.option.isBig7) big7Count++;
     }
 
     const result: AutoResult = {
@@ -369,6 +411,9 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
       score: -(wildCellCount * 100 + big7Count * 10),
     };
 
+    // Check if this improves our top results
+    const prevBest = topResults.length > 0 ? topResults[0].wildCellCount * 100 + topResults[0].big7Count : Infinity;
+
     topResults.push(result);
     topResults.sort((a, b) => {
       if (a.wildCellCount !== b.wildCellCount) return a.wildCellCount - b.wildCellCount;
@@ -376,6 +421,11 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     });
     if (topResults.length > maxKeep) {
       topResults = topResults.slice(0, maxKeep);
+    }
+
+    const newBest = topResults[0].wildCellCount * 100 + topResults[0].big7Count;
+    if (newBest < prevBest) {
+      lastImprovementTime = Date.now();
     }
 
     hasNewResults = true;
@@ -388,7 +438,7 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
   }
 
   function solve(): void {
-    if (isTimeUp()) return;
+    if (shouldStop()) return;
 
     if (dlx.isEmpty()) {
       addResult([...dlx.solution]);
@@ -403,9 +453,19 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     const colHeader = col + 1;
     let rowNode = dlx.nodes[colHeader].down;
     while (rowNode !== colHeader) {
-      if (isTimeUp()) break;
+      if (shouldStop()) break;
 
-      dlx.solution.push(dlx.nodes[rowNode].row);
+      const rowIdx = dlx.nodes[rowNode].row;
+      const placement = placements[rowIdx];
+
+      // Pruning: skip if adding this wild piece would exceed limit
+      if (placement.option.isWild && currentWildCells + placement.option.size > MAX_WILD_CELLS) {
+        rowNode = dlx.nodes[rowNode].down;
+        continue;
+      }
+
+      dlx.solution.push(rowIdx);
+      if (placement.option.isWild) currentWildCells += placement.option.size;
 
       let j = dlx.nodes[rowNode].right;
       while (j !== rowNode) {
@@ -416,6 +476,8 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
       solve();
 
       dlx.solution.pop();
+      if (placement.option.isWild) currentWildCells -= placement.option.size;
+
       j = dlx.nodes[rowNode].left;
       while (j !== rowNode) {
         dlx.uncover(dlx.nodes[j].column);

@@ -80,6 +80,7 @@ export interface AutoConditions {
   useBasicShapes: boolean;
   useBig7: boolean;
   useWild: boolean;
+  maxWildCells: number;
 }
 
 // 自動模式結果

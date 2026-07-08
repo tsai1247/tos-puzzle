@@ -20,6 +20,7 @@ export default function PuzzlePanel() {
   const [countdown, setCountdown] = useState(0);
   const [seedChanged, setSeedChanged] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stopRef = useRef<(() => void) | null>(null);
 
   // 統計數值
   const totalSelected = grid.flat().filter(c => c === CellState.Selected).length;
@@ -253,7 +254,9 @@ export default function PuzzlePanel() {
       setCountdown(0);
       activeWorkers.forEach(w => w.terminate());
       activeWorkers = [];
+      stopRef.current = null;
     };
+    stopRef.current = cleanup;
 
     // 強制換 seed：終止當前 worker，開新一輪
     const forceRestartRound = () => {
@@ -340,7 +343,7 @@ export default function PuzzlePanel() {
   };
 
   const handleExportPuzzle = () => {
-    exportToFile(gridSize, grid, placedPieces);
+    exportToFile(gridSize, grid, placedPieces, '.sol');
   };
 
   const handleImportPuzzle = async () => {
@@ -510,6 +513,23 @@ export default function PuzzlePanel() {
                 style={{ width: 18, height: 18 }}
               />
               萬能拼圖
+              {autoConditions.useWild && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 6 }}>
+                  <span style={{ fontSize: 12, color: '#666' }}>上限</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={50}
+                    value={autoConditions.maxWildCells}
+                    onChange={e => dispatch({
+                      type: 'SET_AUTO_CONDITIONS',
+                      conditions: { ...autoConditions, maxWildCells: Math.max(1, parseInt(e.target.value) || 8) },
+                    })}
+                    style={{ width: 40, padding: '2px 4px', borderRadius: 4, border: '1px solid #ccc', fontSize: 13 }}
+                  />
+                  <span style={{ fontSize: 12, color: '#666' }}>格</span>
+                </span>
+              )}
             </label>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -536,20 +556,37 @@ export default function PuzzlePanel() {
               )}
             </div>
 
-            <button
-              onClick={handleAutoSolve}
-              disabled={isAutoRunning}
-              style={{
-                ...btnStyle,
-                backgroundColor: '#4ad94a',
-                color: 'white',
-                fontWeight: 'bold',
-                opacity: isAutoRunning ? 0.6 : 1,
-                padding: '10px 12px',
-              }}
-            >
-              {isAutoRunning ? `計算中... ${countdown}s` : '自動拼圖'}
-            </button>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button
+                onClick={handleAutoSolve}
+                disabled={isAutoRunning}
+                style={{
+                  ...btnStyle,
+                  flex: 1,
+                  backgroundColor: '#4ad94a',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  opacity: isAutoRunning ? 0.6 : 1,
+                  padding: '10px 12px',
+                }}
+              >
+                {isAutoRunning ? `計算中... ${countdown}s` : '自動拼圖'}
+              </button>
+              {isAutoRunning && (
+                <button
+                  onClick={() => stopRef.current?.()}
+                  style={{
+                    ...btnStyle,
+                    backgroundColor: '#ff5555',
+                    color: 'white',
+                    fontWeight: 'bold',
+                    padding: '10px 12px',
+                  }}
+                >
+                  停止
+                </button>
+              )}
+            </div>
 
             {autoResults.length > 0 && (
               <div style={{ maxHeight: 250, overflowY: 'auto' }}>
