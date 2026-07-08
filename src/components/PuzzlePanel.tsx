@@ -363,7 +363,7 @@ export default function PuzzlePanel() {
   };
 
   const handleExportImage = () => {
-    const gridEl = document.getElementById('puzzle-grid');
+    const gridEl = document.getElementById('puzzle-export');
     if (!gridEl) return;
     import('html2canvas').then(({ default: html2canvas }) => {
       html2canvas(gridEl).then(canvas => {
@@ -396,25 +396,27 @@ export default function PuzzlePanel() {
     }}>
       {/* 左側：拼圖板 */}
       <div style={{ flex: '1 1 300px', minWidth: 0 }}>
-        {/* 版面名稱 */}
-        <div style={{ marginBottom: 6 }}>
-          <input
-            type="text"
-            value={state.boardName}
-            onChange={e => dispatch({ type: 'SET_BOARD_NAME', name: e.target.value })}
-            maxLength={30}
-            style={{
-              fontSize: 'clamp(14px, 3vw, 16px)',
-              fontWeight: 'bold',
-              border: 'none',
-              borderBottom: '1px solid #ccc',
-              background: 'transparent',
-              padding: '2px 4px',
-              width: '100%',
-              maxWidth: 300,
-            }}
-          />
-        </div>
+        {/* 匯出區域（包含標題和拼圖） */}
+        <div id="puzzle-export" style={{ width: 'fit-content' }}>
+          {/* 版面名稱 */}
+          <div style={{ marginBottom: 6 }}>
+            <input
+              type="text"
+              value={state.boardName}
+              onChange={e => dispatch({ type: 'SET_BOARD_NAME', name: e.target.value })}
+              maxLength={30}
+              style={{
+                fontSize: 'clamp(14px, 3vw, 16px)',
+                fontWeight: 'bold',
+                border: 'none',
+                borderBottom: '1px solid #ccc',
+                background: 'transparent',
+                padding: '2px 4px',
+                width: '100%',
+                maxWidth: 300,
+              }}
+            />
+          </div>
         {/* 統計 + 隨機換色 */}
         <div style={{
           display: 'flex',
@@ -461,6 +463,7 @@ export default function PuzzlePanel() {
             onChangeColor={handleChangeColor}
           />
         </div>
+        </div>{/* close puzzle-export */}
       </div>
 
       {/* 右側：控制面板 */}
