@@ -365,14 +365,19 @@ export default function PuzzlePanel() {
   const handleExportImage = () => {
     const gridEl = document.getElementById('puzzle-export');
     if (!gridEl) return;
+    // 暫時縮小寬度以減少留白
+    const originalWidth = gridEl.style.width;
+    gridEl.style.width = 'fit-content';
     import('html2canvas').then(({ default: html2canvas }) => {
       html2canvas(gridEl).then(canvas => {
+        gridEl.style.width = originalWidth;
         const link = document.createElement('a');
-        link.download = `puzzle_${gridSize}x${gridSize}_${Date.now()}.png`;
+        link.download = `${state.boardName || 'puzzle'}.png`;
         link.href = canvas.toDataURL();
         link.click();
       });
     }).catch(() => {
+      gridEl.style.width = originalWidth;
       alert('匯出圖片需要 html2canvas 套件');
     });
   };
@@ -397,7 +402,7 @@ export default function PuzzlePanel() {
       {/* 左側：拼圖板 */}
       <div style={{ flex: '1 1 300px', minWidth: 0 }}>
         {/* 匯出區域（包含標題和拼圖） */}
-        <div id="puzzle-export" style={{ width: 'fit-content' }}>
+        <div id="puzzle-export" style={{ width: '100%' }}>
           {/* 版面名稱 */}
           <div style={{ marginBottom: 6 }}>
             <input
