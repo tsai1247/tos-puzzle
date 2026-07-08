@@ -57,8 +57,8 @@ const EXAMPLE_CATEGORIES = [
     id: 'memorial_misc',
     label: '紀念藍圖(桌布、勳章)',
     items: [
-      { id: 'medal', label: '紀念勳章藍圖', file: 'memorial_misc/medal.sol' },
-      { id: 'wallpaper', label: '紀念桌布藍圖', file: 'memorial_misc/wallpaper.sol' },
+      { id: 'medal_miyuki', label: '紀念藍圖 (勳章) - 司波深雪', file: 'memorial_misc/medal_miyuki.sol' },
+      { id: 'wallpaper_tatsuya', label: '紀念藍圖 (桌布) - 司波達也', file: 'memorial_misc/wallpaper_tatsuya.sol' },
     ],
   },
 ];
