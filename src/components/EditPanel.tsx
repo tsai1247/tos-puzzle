@@ -11,6 +11,12 @@ const EXAMPLES = [
   { id: 'miyuki_lv1', label: '角色藍圖「司波深雪」 Lv.1', file: 'miyuki_lv1.sol' },
   { id: 'miyuki_lv2', label: '角色藍圖「司波深雪」 Lv.2', file: 'miyuki_lv2.sol' },
   { id: 'miyuki_lvmax', label: '角色藍圖「司波深雪」 Lv.MAX', file: 'miyuki_lvmax.sol' },
+  { id: 'resource_sun', label: '資源藍圖（星期日）', file: 'resource_sun.sol' },
+  { id: 'resource_tue', label: '資源藍圖（星期二）', file: 'resource_tue.sol' },
+  { id: 'resource_wed', label: '資源藍圖（星期三）', file: 'resource_wed.sol' },
+  { id: 'resource_thu', label: '資源藍圖（星期四）', file: 'resource_thu.sol' },
+  { id: 'resource_fri', label: '資源藍圖（星期五）', file: 'resource_fri.sol' },
+  { id: 'resource_sat', label: '資源藍圖（星期六）', file: 'resource_sat.sol' },
 ];
 
 // 快取已載入的範例資料
