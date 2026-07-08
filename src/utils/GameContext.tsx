@@ -23,7 +23,7 @@ function loadInitialState(): GameState {
     placedPieces: [],
     selectedTool: Tool.SingleSelect,
     boardName: '自訂版面',
-    autoConditions: { useBasicShapes: true, useBig7: false, useWild: false, maxWildCells: 8 },
+    autoConditions: { useBasicShapes: true, useBig7: false, useBig7Colors: ['blue','red','green','yellow','purple'], useWild: false, maxWildCells: 8, requireBig7: false, requiredBig7Colors: [] },
     autoResults: [],
     selectedAutoResult: null,
   };
@@ -40,7 +40,7 @@ function loadInitialState(): GameState {
       placedPieces: data.placedPieces || [],
       selectedTool: data.selectedTool || Tool.SingleSelect,
       boardName: data.boardName || '自訂版面',
-      autoConditions: data.autoConditions || defaultState.autoConditions,
+      autoConditions: { ...defaultState.autoConditions, ...data.autoConditions },
       // 不還原 autoResults 和 selectedAutoResult（需重新計算）
       autoResults: [],
       selectedAutoResult: null,

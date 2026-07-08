@@ -223,8 +223,11 @@ function generatePieceOptions(conditions: AutoConditions): PieceOption[] {
   }
 
   if (conditions.useBig7) {
-    const big7Colors = [PuzzleColor.Blue, PuzzleColor.Red, PuzzleColor.Green, PuzzleColor.Yellow, PuzzleColor.Purple];
-    for (const color of big7Colors) {
+    const allBig7Colors = [PuzzleColor.Blue, PuzzleColor.Red, PuzzleColor.Green, PuzzleColor.Yellow, PuzzleColor.Purple];
+    const enabledBig7Colors = conditions.useBig7Colors && conditions.useBig7Colors.length > 0
+      ? allBig7Colors.filter(c => conditions.useBig7Colors.includes(c))
+      : allBig7Colors;
+    for (const color of enabledBig7Colors) {
       const rotations = getAllRotations(PuzzleShape.Big7, color);
       rotations.forEach((cells, r) => {
         options.push({ shape: PuzzleShape.Big7, color, cells, rotation: r, size: cells.length, isWild: false, isBig7: true });
@@ -376,14 +379,25 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     // Check wild cell constraint
     let wildCellCount = 0;
     let big7Count = 0;
+    const big7ColorsUsed = new Set<string>();
     for (const rowIdx of solutionRows) {
       const p = placements[rowIdx];
       if (p.option.isWild) wildCellCount += p.option.size;
-      if (p.option.isBig7) big7Count++;
+      if (p.option.isBig7) {
+        big7Count++;
+        big7ColorsUsed.add(p.option.color);
+      }
     }
 
-    // Constraint: max 8 wild cells
+    // Constraint: max wild cells
     if (wildCellCount > MAX_WILD_CELLS) return;
+
+    // Constraint: requireBig7 — must include at least one big7 of each required color
+    if (conditions.requireBig7 && conditions.requiredBig7Colors.length > 0) {
+      for (const reqColor of conditions.requiredBig7Colors) {
+        if (!big7ColorsUsed.has(reqColor)) return;
+      }
+    }
 
     // Deduplication
     const fp = solutionFingerprint(solutionRows, placements);

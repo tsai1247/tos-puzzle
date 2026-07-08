@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useGame } from '../utils/GameContext';
 import { GamePhase, CellState, PuzzleShape, PuzzleColor } from '../types';
 import type { PlacedPiece, Coord, AutoResult } from '../types';
-import { getShapeCells, rotateCells, cellsToAbsolute, generateId } from '../utils/puzzleData';
+import { getShapeCells, rotateCells, cellsToAbsolute, generateId, COLOR_MAP } from '../utils/puzzleData';
 import { exportToFile, importFromFile } from '../utils/storage';
 import { encodeForUrl } from '../utils/urlShare';
 import PuzzlePalette from './PuzzlePalette';
@@ -539,7 +539,8 @@ export default function PuzzlePanel() {
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
               <input
                 type="checkbox"
-                checked={autoConditions.useBig7}
+                checked={autoConditions.useBig7 || autoConditions.requireBig7}
+                disabled={autoConditions.requireBig7}
                 onChange={e => dispatch({
                   type: 'SET_AUTO_CONDITIONS',
                   conditions: { ...autoConditions, useBig7: e.target.checked },
@@ -548,6 +549,34 @@ export default function PuzzlePanel() {
               />
               大型7格拼圖
             </label>
+            {(autoConditions.useBig7 || autoConditions.requireBig7) && (
+              <div style={{ display: 'flex', gap: 6, marginLeft: 24, flexWrap: 'wrap' }}>
+                {([PuzzleColor.Blue, PuzzleColor.Red, PuzzleColor.Green, PuzzleColor.Yellow, PuzzleColor.Purple] as const).map(color => {
+                  const isRequired = autoConditions.requireBig7 && autoConditions.requiredBig7Colors.includes(color);
+                  const isChecked = (autoConditions.useBig7Colors || []).includes(color) || isRequired;
+                  return (
+                    <label key={color} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 13 }}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        disabled={isRequired}
+                        onChange={e => {
+                          const colors = e.target.checked
+                            ? [...(autoConditions.useBig7Colors || []), color]
+                            : (autoConditions.useBig7Colors || []).filter(c => c !== color);
+                          dispatch({
+                            type: 'SET_AUTO_CONDITIONS',
+                            conditions: { ...autoConditions, useBig7Colors: colors },
+                          });
+                        }}
+                        style={{ width: 16, height: 16 }}
+                      />
+                      <span style={{ width: 12, height: 12, backgroundColor: COLOR_MAP[color], borderRadius: 2, display: 'inline-block' }} />
+                    </label>
+                  );
+                })}
+              </div>
+            )}
             <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
               <input
                 type="checkbox"
@@ -577,6 +606,42 @@ export default function PuzzlePanel() {
                 </span>
               )}
             </label>
+
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 14 }}>
+              <input
+                type="checkbox"
+                checked={autoConditions.requireBig7}
+                onChange={e => dispatch({
+                  type: 'SET_AUTO_CONDITIONS',
+                  conditions: { ...autoConditions, requireBig7: e.target.checked, useBig7: e.target.checked ? true : autoConditions.useBig7, requiredBig7Colors: e.target.checked ? autoConditions.requiredBig7Colors : [] },
+                })}
+                style={{ width: 18, height: 18 }}
+              />
+              至少使用一個大型拼圖
+            </label>
+            {autoConditions.requireBig7 && (
+              <div style={{ display: 'flex', gap: 6, marginLeft: 24, flexWrap: 'wrap' }}>
+                {([PuzzleColor.Blue, PuzzleColor.Red, PuzzleColor.Green, PuzzleColor.Yellow, PuzzleColor.Purple] as const).map(color => (
+                  <label key={color} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 13 }}>
+                    <input
+                      type="checkbox"
+                      checked={autoConditions.requiredBig7Colors.includes(color)}
+                      onChange={e => {
+                        const colors = e.target.checked
+                          ? [...autoConditions.requiredBig7Colors, color]
+                          : autoConditions.requiredBig7Colors.filter(c => c !== color);
+                        dispatch({
+                          type: 'SET_AUTO_CONDITIONS',
+                          conditions: { ...autoConditions, requiredBig7Colors: colors },
+                        });
+                      }}
+                      style={{ width: 16, height: 16 }}
+                    />
+                    <span style={{ width: 12, height: 12, backgroundColor: COLOR_MAP[color], borderRadius: 2, display: 'inline-block' }} />
+                  </label>
+                ))}
+              </div>
+            )}
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
               <label style={{ fontSize: 13 }}>搜尋時間：</label>

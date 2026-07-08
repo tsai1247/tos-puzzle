@@ -6,17 +6,41 @@ import { exportToFile, importFromFile, decodeData } from '../utils/storage';
 import MdiIcon from './MdiIcon';
 import { mdiPencil, mdiEraser, mdiSelectDrag, mdiSelectRemove } from '@mdi/js';
 
-const EXAMPLES = [
-  { id: 'custom', label: '自訂', file: '' },
-  { id: 'miyuki_lv1', label: '角色藍圖「司波深雪」 Lv.1', file: 'miyuki_lv1.sol' },
-  { id: 'miyuki_lv2', label: '角色藍圖「司波深雪」 Lv.2', file: 'miyuki_lv2.sol' },
-  { id: 'miyuki_lvmax', label: '角色藍圖「司波深雪」 Lv.MAX', file: 'miyuki_lvmax.sol' },
-  { id: 'resource_sun', label: '資源藍圖（星期日）', file: 'resource_sun.sol' },
-  { id: 'resource_tue', label: '資源藍圖（星期二）', file: 'resource_tue.sol' },
-  { id: 'resource_wed', label: '資源藍圖（星期三）', file: 'resource_wed.sol' },
-  { id: 'resource_thu', label: '資源藍圖（星期四）', file: 'resource_thu.sol' },
-  { id: 'resource_fri', label: '資源藍圖（星期五）', file: 'resource_fri.sol' },
-  { id: 'resource_sat', label: '資源藍圖（星期六）', file: 'resource_sat.sol' },
+const EXAMPLE_CATEGORIES = [
+  {
+    id: 'general',
+    label: '一般用藍圖',
+    items: [
+      { id: 'miyuki_lv1', label: '角色藍圖「司波深雪」 Lv.1', file: 'general/miyuki_lv1.sol' },
+      { id: 'miyuki_lv2', label: '角色藍圖「司波深雪」 Lv.2', file: 'general/miyuki_lv2.sol' },
+      { id: 'miyuki_lvmax', label: '角色藍圖「司波深雪」 Lv.MAX', file: 'general/miyuki_lvmax.sol' },
+      { id: 'weapon_general', label: '武裝藍圖（泛用型）', file: 'general/weapon_general.sol' },
+      { id: 'weapon_tatsuya', label: '武裝藍圖（司波達也）', file: 'general/weapon_tatsuya.sol' },
+      { id: 'weapon_miyuki', label: '武裝藍圖（司波深雪）', file: 'general/weapon_miyuki.sol' },
+      { id: 'weapon_erika', label: '武裝藍圖（千葉艾莉卡）', file: 'general/weapon_erika.sol' },
+      { id: 'weapon_leo', label: '武裝藍圖（西城雷歐赫特）', file: 'general/weapon_leo.sol' },
+      { id: 'weapon_mikihiko', label: '武裝藍圖（吉田幹比古）', file: 'general/weapon_mikihiko.sol' },
+      { id: 'weapon_mizuki', label: '武裝藍圖（柴田美月）', file: 'general/weapon_mizuki.sol' },
+      { id: 'weapon_mayumi', label: '武裝藍圖（七草真由美）', file: 'general/weapon_mayumi.sol' },
+      { id: 'weapon_angelina', label: '武裝藍圖（安潔莉娜）', file: 'general/weapon_angelina.sol' },
+      { id: 'weapon_minami', label: '武裝藍圖（櫻井水波）', file: 'general/weapon_minami.sol' },
+    ],
+  },
+  {
+    id: 'onetime',
+    label: '一次性藍圖',
+    items: [
+      { id: 'skill_1', label: '技能藍圖I', file: 'onetime/skill_1.sol' },
+      { id: 'skill_2', label: '技能藍圖II', file: 'onetime/skill_2.sol' },
+      { id: 'skill_3', label: '技能藍圖III', file: 'onetime/skill_3.sol' },
+      { id: 'resource_sun', label: '資源藍圖（星期日）', file: 'onetime/resource_sun.sol' },
+      { id: 'resource_tue', label: '資源藍圖（星期二）', file: 'onetime/resource_tue.sol' },
+      { id: 'resource_wed', label: '資源藍圖（星期三）', file: 'onetime/resource_wed.sol' },
+      { id: 'resource_thu', label: '資源藍圖（星期四）', file: 'onetime/resource_thu.sol' },
+      { id: 'resource_fri', label: '資源藍圖（星期五）', file: 'onetime/resource_fri.sol' },
+      { id: 'resource_sat', label: '資源藍圖（星期六）', file: 'onetime/resource_sat.sol' },
+    ],
+  },
 ];
 
 // 快取已載入的範例資料
@@ -25,7 +49,8 @@ const exampleCache: Record<string, { gridSize: GridSize; grid: unknown[][]; plac
 export default function EditPanel() {
   const { state, dispatch } = useGame();
   const { gridSize, selectedTool, grid } = state;
-  const [selectedExample, setSelectedExample] = useState('custom');
+  const [selectedCategory, setSelectedCategory] = useState('custom');
+  const [selectedExample, setSelectedExample] = useState('');
   const isLoadingExample = useRef(false);
   const lastGridSnapshot = useRef<string>(JSON.stringify(grid));
   const selectedExampleRef = useRef('custom');
@@ -41,34 +66,47 @@ export default function EditPanel() {
     if (currentSnapshot !== lastGridSnapshot.current) {
       if (selectedExampleRef.current !== 'custom') {
         selectedExampleRef.current = 'custom';
-        setSelectedExample('custom');
+        setSelectedCategory('custom');
+        setSelectedExample('');
         dispatch({ type: 'SET_BOARD_NAME', name: '自訂版面' });
       }
     }
     lastGridSnapshot.current = currentSnapshot;
   }, [grid, dispatch]);
 
-  const handleExampleChange = async (id: string) => {
-    setSelectedExample(id);
-    selectedExampleRef.current = id;
-    if (id === 'custom') return;
+  const handleCategoryChange = (catId: string) => {
+    setSelectedCategory(catId);
+    setSelectedExample('');
+    if (catId === 'custom') {
+      selectedExampleRef.current = 'custom';
+    }
+  };
 
-    const ex = EXAMPLES.find(e => e.id === id);
-    if (!ex || !ex.file) return;
+  const handleExampleChange = async (itemId: string) => {
+    setSelectedExample(itemId);
+    if (!itemId) return;
+
+    const cat = EXAMPLE_CATEGORIES.find(c => c.id === selectedCategory);
+    const item = cat?.items.find(i => i.id === itemId);
+    if (!item) return;
+
+    selectedExampleRef.current = itemId;
 
     try {
       isLoadingExample.current = true;
-      if (!exampleCache[id]) {
-        const res = await fetch(`${import.meta.env.BASE_URL}examples/${ex.file}`);
+      if (!exampleCache[itemId]) {
+        const res = await fetch(`${import.meta.env.BASE_URL}examples/${item.file}`);
         const encoded = await res.text();
         const data = decodeData(encoded);
-        exampleCache[id] = data as typeof exampleCache[string];
+        exampleCache[itemId] = data as typeof exampleCache[string];
       }
-      const data = exampleCache[id];
-      dispatch({ type: 'LOAD_STATE', gridSize: data.gridSize as GridSize, grid: data.grid as typeof grid, boardName: ex.label });
+      const data = exampleCache[itemId];
+      dispatch({ type: 'LOAD_STATE', gridSize: data.gridSize as GridSize, grid: data.grid as typeof grid, boardName: item.label });
     } catch {
       alert('載入範例失敗');
-      setSelectedExample('custom');
+      selectedExampleRef.current = 'custom';
+      setSelectedCategory('custom');
+      setSelectedExample('');
       isLoadingExample.current = false;
     }
   };
@@ -90,7 +128,8 @@ export default function EditPanel() {
       const data = await importFromFile();
       isLoadingExample.current = true;
       dispatch({ type: 'LOAD_STATE', gridSize: data.gridSize, grid: data.grid });
-      setSelectedExample('custom');
+      setSelectedCategory('custom');
+      setSelectedExample('');
     } catch (err) {
       alert(`匯入失敗：${err instanceof Error ? err.message : '未知錯誤'}`);
     }
@@ -98,9 +137,10 @@ export default function EditPanel() {
 
   const handleStartPuzzle = async () => {
     // 如果選的是範例，套用既有解答
-    if (selectedExample !== 'custom') {
-      const ex = EXAMPLES.find(e => e.id === selectedExample);
-      if (ex && ex.file && exampleCache[selectedExample]) {
+    if (selectedCategory !== 'custom' && selectedExample) {
+      const cat = EXAMPLE_CATEGORIES.find(c => c.id === selectedCategory);
+      const item = cat?.items.find(i => i.id === selectedExample);
+      if (item && exampleCache[selectedExample]) {
         const data = exampleCache[selectedExample];
         if (data.placedPieces && (data.placedPieces as unknown[]).length > 0) {
           dispatch({
@@ -108,7 +148,7 @@ export default function EditPanel() {
             gridSize: data.gridSize as GridSize,
             grid: data.grid as typeof grid,
             placedPieces: data.placedPieces as typeof state.placedPieces,
-            boardName: ex.label,
+            boardName: item.label,
           });
           dispatch({ type: 'SET_PHASE', phase: GamePhase.Puzzle });
           return;
@@ -134,22 +174,43 @@ export default function EditPanel() {
       {/* 範例選擇 */}
       <div>
         <h3 style={{ margin: '0 0 6px 0', fontSize: 13 }}>版面</h3>
-        <select
-          value={selectedExample}
-          onChange={e => handleExampleChange(e.target.value)}
-          style={{
-            padding: '6px 10px',
-            borderRadius: 4,
-            border: '1px solid #ccc',
-            fontSize: 14,
-            width: '100%',
-            maxWidth: 250,
-          }}
-        >
-          {EXAMPLES.map(ex => (
-            <option key={ex.id} value={ex.id}>{ex.label}</option>
-          ))}
-        </select>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <select
+            value={selectedCategory}
+            onChange={e => handleCategoryChange(e.target.value)}
+            style={{
+              padding: '6px 10px',
+              borderRadius: 4,
+              border: '1px solid #ccc',
+              fontSize: 14,
+              flex: '1 1 120px',
+              maxWidth: 150,
+            }}
+          >
+            <option value="custom">自訂</option>
+            {EXAMPLE_CATEGORIES.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.label}</option>
+            ))}
+          </select>
+          {selectedCategory !== 'custom' && (
+            <select
+              value={selectedExample}
+              onChange={e => handleExampleChange(e.target.value)}
+              style={{
+                padding: '6px 10px',
+                borderRadius: 4,
+                border: '1px solid #ccc',
+                fontSize: 14,
+                flex: '1 1 180px',
+              }}
+            >
+              <option value="">選擇版面...</option>
+              {EXAMPLE_CATEGORIES.find(c => c.id === selectedCategory)?.items.map(item => (
+                <option key={item.id} value={item.id}>{item.label}</option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {/* 場地大小 */}

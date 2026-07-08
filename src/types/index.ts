@@ -79,8 +79,11 @@ export type GamePhase = typeof GamePhase[keyof typeof GamePhase];
 export interface AutoConditions {
   useBasicShapes: boolean;
   useBig7: boolean;
+  useBig7Colors: string[];
   useWild: boolean;
   maxWildCells: number;
+  requireBig7: boolean;
+  requiredBig7Colors: string[];
 }
 
 // 自動模式結果
