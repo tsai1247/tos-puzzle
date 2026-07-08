@@ -4,6 +4,7 @@ import { GamePhase, CellState, PuzzleShape, PuzzleColor } from '../types';
 import type { PlacedPiece, Coord, AutoResult } from '../types';
 import { getShapeCells, rotateCells, cellsToAbsolute, generateId } from '../utils/puzzleData';
 import { exportToFile, importFromFile } from '../utils/storage';
+import { encodeForUrl } from '../utils/urlShare';
 import PuzzlePalette from './PuzzlePalette';
 import Grid from './Grid';
 
@@ -338,8 +339,11 @@ export default function PuzzlePanel() {
   };
 
   const handleBackToEdit = () => {
+    const choice = confirm('返回編輯將清空拼圖結果。\n按「確定」返回編輯，按「取消」留在拼圖階段。\n\n（如需匯出請先使用匯出功能）');
+    if (!choice) return;
     dispatch({ type: 'SET_PHASE', phase: GamePhase.Edit });
     dispatch({ type: 'SET_PLACED_PIECES', pieces: [] });
+    dispatch({ type: 'SET_AUTO_RESULTS', results: [] });
   };
 
   const handleExportPuzzle = () => {
@@ -373,6 +377,17 @@ export default function PuzzlePanel() {
     });
   };
 
+  const handleShare = () => {
+    const encoded = encodeForUrl(gridSize, grid, placedPieces);
+    const nameParam = state.boardName ? `&n=${encodeURIComponent(state.boardName)}` : '';
+    const url = `${window.location.origin}${window.location.pathname}?s=${encoded}${nameParam}`;
+    navigator.clipboard.writeText(url).then(() => {
+      alert('分享連結已複製到剪貼簿！');
+    }).catch(() => {
+      prompt('複製以下連結分享：', url);
+    });
+  };
+
   return (
     <div style={{
       display: 'flex',
@@ -381,7 +396,26 @@ export default function PuzzlePanel() {
     }}>
       {/* 左側：拼圖板 */}
       <div style={{ flex: '1 1 300px', minWidth: 0 }}>
-        {/* 統計 */}
+        {/* 版面名稱 */}
+        <div style={{ marginBottom: 6 }}>
+          <input
+            type="text"
+            value={state.boardName}
+            onChange={e => dispatch({ type: 'SET_BOARD_NAME', name: e.target.value })}
+            maxLength={30}
+            style={{
+              fontSize: 'clamp(14px, 3vw, 16px)',
+              fontWeight: 'bold',
+              border: 'none',
+              borderBottom: '1px solid #ccc',
+              background: 'transparent',
+              padding: '2px 4px',
+              width: '100%',
+              maxWidth: 300,
+            }}
+          />
+        </div>
+        {/* 統計 + 隨機換色 */}
         <div style={{
           display: 'flex',
           gap: 'clamp(8px, 2vw, 16px)',
@@ -391,6 +425,7 @@ export default function PuzzlePanel() {
           borderRadius: 4,
           fontSize: 'clamp(12px, 2.5vw, 14px)',
           flexWrap: 'wrap',
+          alignItems: 'center',
           position: 'sticky',
           top: 0,
           zIndex: 10,
@@ -400,6 +435,20 @@ export default function PuzzlePanel() {
           <span style={{ color: overflow > 0 ? 'red' : '#333' }}>
             超出：<strong>{overflow}</strong>
           </span>
+          <button
+            onClick={handleRandomizeColors}
+            style={{
+              marginLeft: 'auto',
+              padding: '4px 8px',
+              backgroundColor: '#fff',
+              border: '1px solid #ccc',
+              borderRadius: 4,
+              cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
+            🎨 換色
+          </button>
         </div>
 
         <div id="puzzle-grid">
@@ -457,9 +506,6 @@ export default function PuzzlePanel() {
         {mode === 'manual' && (
           <>
             <PuzzlePalette onSpawnPiece={handleSpawnPiece} />
-            <button onClick={handleRandomizeColors} style={{ ...btnStyle, width: '100%' }}>
-              🎨 隨機換色
-            </button>
             <button
               onClick={() => {
                 if (placedPieces.length === 0 || confirm('確定清空所有拼圖？')) {
@@ -627,6 +673,7 @@ export default function PuzzlePanel() {
             <button onClick={handleExportPuzzle} style={btnStyle}>匯出檔案</button>
             <button onClick={handleImportPuzzle} style={btnStyle}>匯入檔案</button>
             <button onClick={handleExportImage} style={btnStyle}>匯出圖片</button>
+            <button onClick={handleShare} style={{ ...btnStyle, backgroundColor: '#d4edff' }}>分享連結</button>
           </div>
           <p style={{ fontSize: 11, color: '#888', marginTop: 4 }}>自動儲存中（每 5 秒）</p>
         </div>

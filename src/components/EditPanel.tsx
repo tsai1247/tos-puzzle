@@ -1,13 +1,71 @@
+import { useState, useEffect, useRef } from 'react';
 import { useGame } from '../utils/GameContext';
 import { Tool, GamePhase } from '../types';
 import type { GridSize } from '../types';
-import { exportToFile, importFromFile } from '../utils/storage';
+import { exportToFile, importFromFile, decodeData } from '../utils/storage';
 import MdiIcon from './MdiIcon';
 import { mdiPencil, mdiEraser, mdiSelectDrag, mdiSelectRemove } from '@mdi/js';
+
+const EXAMPLES = [
+  { id: 'custom', label: '自訂', file: '' },
+  { id: 'miyuki_lv1', label: '角色藍圖「司波深雪」 Lv.1', file: 'miyuki_lv1.sol' },
+  { id: 'miyuki_lv2', label: '角色藍圖「司波深雪」 Lv.2', file: 'miyuki_lv2.sol' },
+  { id: 'miyuki_lvmax', label: '角色藍圖「司波深雪」 Lv.MAX', file: 'miyuki_lvmax.sol' },
+];
+
+// 快取已載入的範例資料
+const exampleCache: Record<string, { gridSize: GridSize; grid: unknown[][]; placedPieces?: unknown[] }> = {};
 
 export default function EditPanel() {
   const { state, dispatch } = useGame();
   const { gridSize, selectedTool, grid } = state;
+  const [selectedExample, setSelectedExample] = useState('custom');
+  const isLoadingExample = useRef(false);
+  const lastGridSnapshot = useRef<string>(JSON.stringify(grid));
+  const selectedExampleRef = useRef('custom');
+
+  // 偵測版面變更 → 切回自訂
+  useEffect(() => {
+    if (isLoadingExample.current) {
+      lastGridSnapshot.current = JSON.stringify(grid);
+      isLoadingExample.current = false;
+      return;
+    }
+    const currentSnapshot = JSON.stringify(grid);
+    if (currentSnapshot !== lastGridSnapshot.current) {
+      if (selectedExampleRef.current !== 'custom') {
+        selectedExampleRef.current = 'custom';
+        setSelectedExample('custom');
+        dispatch({ type: 'SET_BOARD_NAME', name: '自訂版面' });
+      }
+    }
+    lastGridSnapshot.current = currentSnapshot;
+  }, [grid, dispatch]);
+
+  const handleExampleChange = async (id: string) => {
+    setSelectedExample(id);
+    selectedExampleRef.current = id;
+    if (id === 'custom') return;
+
+    const ex = EXAMPLES.find(e => e.id === id);
+    if (!ex || !ex.file) return;
+
+    try {
+      isLoadingExample.current = true;
+      if (!exampleCache[id]) {
+        const res = await fetch(`${import.meta.env.BASE_URL}examples/${ex.file}`);
+        const encoded = await res.text();
+        const data = decodeData(encoded);
+        exampleCache[id] = data as typeof exampleCache[string];
+      }
+      const data = exampleCache[id];
+      dispatch({ type: 'LOAD_STATE', gridSize: data.gridSize as GridSize, grid: data.grid as typeof grid, boardName: ex.label });
+    } catch {
+      alert('載入範例失敗');
+      setSelectedExample('custom');
+      isLoadingExample.current = false;
+    }
+  };
 
   const handleSizeChange = (size: GridSize) => {
     if (size !== gridSize) {
@@ -24,13 +82,33 @@ export default function EditPanel() {
   const handleImport = async () => {
     try {
       const data = await importFromFile();
+      isLoadingExample.current = true;
       dispatch({ type: 'LOAD_STATE', gridSize: data.gridSize, grid: data.grid });
+      setSelectedExample('custom');
     } catch (err) {
       alert(`匯入失敗：${err instanceof Error ? err.message : '未知錯誤'}`);
     }
   };
 
-  const handleStartPuzzle = () => {
+  const handleStartPuzzle = async () => {
+    // 如果選的是範例，套用既有解答
+    if (selectedExample !== 'custom') {
+      const ex = EXAMPLES.find(e => e.id === selectedExample);
+      if (ex && ex.file && exampleCache[selectedExample]) {
+        const data = exampleCache[selectedExample];
+        if (data.placedPieces && (data.placedPieces as unknown[]).length > 0) {
+          dispatch({
+            type: 'LOAD_STATE',
+            gridSize: data.gridSize as GridSize,
+            grid: data.grid as typeof grid,
+            placedPieces: data.placedPieces as typeof state.placedPieces,
+            boardName: ex.label,
+          });
+          dispatch({ type: 'SET_PHASE', phase: GamePhase.Puzzle });
+          return;
+        }
+      }
+    }
     dispatch({ type: 'SET_PHASE', phase: GamePhase.Puzzle });
   };
 
@@ -45,6 +123,27 @@ export default function EditPanel() {
   return (
     <div style={{ padding: '12px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
       <h2 style={{ margin: 0, fontSize: 'clamp(16px, 3vw, 18px)' }}>編輯階段</h2>
+
+      {/* 範例選擇 */}
+      <div>
+        <h3 style={{ margin: '0 0 6px 0', fontSize: 13 }}>版面</h3>
+        <select
+          value={selectedExample}
+          onChange={e => handleExampleChange(e.target.value)}
+          style={{
+            padding: '6px 10px',
+            borderRadius: 4,
+            border: '1px solid #ccc',
+            fontSize: 14,
+            width: '100%',
+            maxWidth: 250,
+          }}
+        >
+          {EXAMPLES.map(ex => (
+            <option key={ex.id} value={ex.id}>{ex.label}</option>
+          ))}
+        </select>
+      </div>
 
       {/* 場地大小 */}
       <div>

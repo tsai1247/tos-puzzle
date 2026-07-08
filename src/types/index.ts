@@ -98,6 +98,7 @@ export interface GameState {
   grid: CellState[][];
   placedPieces: PlacedPiece[];
   selectedTool: Tool;
+  boardName: string;
   autoConditions: AutoConditions;
   autoResults: AutoResult[];
   selectedAutoResult: number | null;

@@ -1,12 +1,34 @@
+import { useEffect, useRef } from 'react';
 import { useGame } from './utils/GameContext';
 import { GamePhase } from './types';
 import EditPanel from './components/EditPanel';
 import PuzzlePanel from './components/PuzzlePanel';
 import Grid from './components/Grid';
+import { decodeFromUrl } from './utils/urlShare';
 
 function AppContent() {
-  const { state } = useGame();
+  const { state, dispatch } = useGame();
   const { phase } = state;
+  const hasLoadedUrl = useRef(false);
+
+  // 啟動時檢查 URL 參數
+  useEffect(() => {
+    if (hasLoadedUrl.current) return;
+    hasLoadedUrl.current = true;
+
+    const params = new URLSearchParams(window.location.search);
+    const shared = params.get('s');
+    if (shared) {
+      const data = decodeFromUrl(shared);
+      if (data) {
+        const boardName = params.get('n') || '分享版面';
+        dispatch({ type: 'LOAD_STATE', gridSize: data.gridSize, grid: data.grid, placedPieces: data.placedPieces, boardName });
+        dispatch({ type: 'SET_PHASE', phase: GamePhase.Puzzle });
+        // 清除 URL 參數避免重複載入
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, [dispatch]);
 
   return (
     <div style={{
