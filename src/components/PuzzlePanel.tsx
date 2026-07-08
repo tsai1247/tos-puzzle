@@ -362,18 +362,24 @@ export default function PuzzlePanel() {
     }
   };
 
+  const [showExportModal, setShowExportModal] = useState(false);
+
   const handleExportImage = () => {
-    const gridEl = document.getElementById('puzzle-grid');
-    if (!gridEl) return;
+    setShowExportModal(true);
+  };
+
+  const handleDownloadImage = () => {
+    const el = document.getElementById('export-modal-content');
+    if (!el) return;
     import('html2canvas').then(({ default: html2canvas }) => {
-      html2canvas(gridEl).then(canvas => {
+      html2canvas(el, { backgroundColor: '#ffffff' }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `puzzle_${gridSize}x${gridSize}_${Date.now()}.png`;
+        link.download = `${state.boardName || 'puzzle'}.png`;
         link.href = canvas.toDataURL();
         link.click();
       });
     }).catch(() => {
-      alert('匯出圖片需要 html2canvas 套件');
+      alert('匯出圖片失敗');
     });
   };
 
@@ -771,6 +777,66 @@ export default function PuzzlePanel() {
           ← 返回編輯
         </button>
       </div>
+
+      {/* 匯出圖片 Modal */}
+      {showExportModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: 16,
+        }} onClick={() => setShowExportModal(false)}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: 8,
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            overflow: 'auto',
+            position: 'relative',
+          }} onClick={e => e.stopPropagation()}>
+            {/* 工具列 */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: 8,
+              padding: '8px 12px',
+              borderBottom: '1px solid #eee',
+              position: 'sticky',
+              top: 0,
+              backgroundColor: '#fff',
+              zIndex: 1,
+            }}>
+              <button
+                onClick={handleDownloadImage}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 20 }}
+                title="下載圖片"
+              >
+                ⬇️
+              </button>
+              <button
+                onClick={() => setShowExportModal(false)}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: 20 }}
+                title="關閉"
+              >
+                ✕
+              </button>
+            </div>
+            {/* 匯出內容 */}
+            <div id="export-modal-content" style={{ padding: 16, width: 'fit-content' }}>
+              <div style={{ fontSize: 16, fontWeight: 'bold', marginBottom: 8 }}>
+                {state.boardName}
+              </div>
+              <Grid
+                selectedPiece={null}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
