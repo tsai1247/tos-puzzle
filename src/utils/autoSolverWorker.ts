@@ -224,8 +224,13 @@ function generatePieceOptions(conditions: AutoConditions): PieceOption[] {
 
   if (conditions.useBig7) {
     const allBig7Colors = [PuzzleColor.Blue, PuzzleColor.Red, PuzzleColor.Green, PuzzleColor.Yellow, PuzzleColor.Purple];
-    const enabledBig7Colors = conditions.useBig7Colors && conditions.useBig7Colors.length > 0
-      ? allBig7Colors.filter(c => conditions.useBig7Colors.includes(c))
+    // Combine useBig7Colors and requiredBig7Colors
+    const selectedColors = new Set([
+      ...(conditions.useBig7Colors || []),
+      ...(conditions.requireBig7 ? (conditions.requiredBig7Colors || []) : []),
+    ]);
+    const enabledBig7Colors = selectedColors.size > 0
+      ? allBig7Colors.filter(c => selectedColors.has(c))
       : allBig7Colors;
     for (const color of enabledBig7Colors) {
       const rotations = getAllRotations(PuzzleShape.Big7, color);
