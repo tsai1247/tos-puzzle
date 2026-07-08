@@ -109,6 +109,7 @@ export default function EditPanel() {
         }
       }
     }
+    dispatch({ type: 'SET_BOARD_NAME', name: '自訂版面' });
     dispatch({ type: 'SET_PHASE', phase: GamePhase.Puzzle });
   };
 
