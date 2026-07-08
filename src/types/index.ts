@@ -102,6 +102,8 @@ export interface GameState {
   placedPieces: PlacedPiece[];
   selectedTool: Tool;
   boardName: string;
+  selectedCategory: string;
+  selectedExampleId: string;
   autoConditions: AutoConditions;
   autoResults: AutoResult[];
   selectedAutoResult: number | null;

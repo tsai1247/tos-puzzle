@@ -359,6 +359,8 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
 
   // Current wild cell count during search (for pruning)
   let currentWildCells = 0;
+  // Dynamic upper bound: prune if current wild cells already >= best known result
+  let bestWildBound = MAX_WILD_CELLS;
 
   function shouldStop(): boolean {
     if (timeUp) return true;
@@ -445,6 +447,8 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
     const newBest = topResults[0].wildCellCount * 100 + topResults[0].big7Count;
     if (newBest < prevBest) {
       lastImprovementTime = Date.now();
+      // 動態收縮萬能拼圖上界
+      bestWildBound = topResults[0].wildCellCount;
     }
 
     hasNewResults = true;
@@ -458,6 +462,8 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
 
   function solve(): void {
     if (shouldStop()) return;
+    // Prune: if current wild cells already >= best known, no point continuing with wilds
+    // (non-wild placements can still proceed)
 
     if (dlx.isEmpty()) {
       addResult([...dlx.solution]);
@@ -477,8 +483,9 @@ self.onmessage = (e: MessageEvent<WorkerMessage>) => {
       const rowIdx = dlx.nodes[rowNode].row;
       const placement = placements[rowIdx];
 
-      // Pruning: skip if adding this wild piece would exceed limit
-      if (placement.option.isWild && currentWildCells + placement.option.size > MAX_WILD_CELLS) {
+      // Pruning: skip if adding this wild piece would exceed limit or current best
+      const wildLimit = Math.min(MAX_WILD_CELLS, bestWildBound);
+      if (placement.option.isWild && currentWildCells + placement.option.size > wildLimit) {
         rowNode = dlx.nodes[rowNode].down;
         continue;
       }

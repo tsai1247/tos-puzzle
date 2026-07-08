@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useGame } from '../utils/GameContext';
 import { Tool, GamePhase } from '../types';
 import type { GridSize } from '../types';
@@ -69,11 +69,11 @@ const exampleCache: Record<string, { gridSize: GridSize; grid: unknown[][]; plac
 export default function EditPanel() {
   const { state, dispatch } = useGame();
   const { gridSize, selectedTool, grid } = state;
-  const [selectedCategory, setSelectedCategory] = useState('custom');
-  const [selectedExample, setSelectedExample] = useState('');
+  const selectedCategory = state.selectedCategory;
+  const selectedExample = state.selectedExampleId;
   const isLoadingExample = useRef(false);
   const lastGridSnapshot = useRef<string>(JSON.stringify(grid));
-  const selectedExampleRef = useRef('custom');
+  const selectedExampleRef = useRef(state.selectedExampleId || 'custom');
 
   // 偵測版面變更 → 切回自訂
   useEffect(() => {
@@ -86,8 +86,7 @@ export default function EditPanel() {
     if (currentSnapshot !== lastGridSnapshot.current) {
       if (selectedExampleRef.current !== 'custom') {
         selectedExampleRef.current = 'custom';
-        setSelectedCategory('custom');
-        setSelectedExample('');
+        dispatch({ type: 'SET_EXAMPLE_SELECTION', category: 'custom', exampleId: '' });
         dispatch({ type: 'SET_BOARD_NAME', name: '自訂版面' });
       }
     }
@@ -95,15 +94,14 @@ export default function EditPanel() {
   }, [grid, dispatch]);
 
   const handleCategoryChange = (catId: string) => {
-    setSelectedCategory(catId);
-    setSelectedExample('');
+    dispatch({ type: 'SET_EXAMPLE_SELECTION', category: catId, exampleId: '' });
     if (catId === 'custom') {
       selectedExampleRef.current = 'custom';
     }
   };
 
   const handleExampleChange = async (itemId: string) => {
-    setSelectedExample(itemId);
+    dispatch({ type: 'SET_EXAMPLE_SELECTION', category: selectedCategory, exampleId: itemId });
     if (!itemId) return;
 
     const cat = EXAMPLE_CATEGORIES.find(c => c.id === selectedCategory);
@@ -125,8 +123,7 @@ export default function EditPanel() {
     } catch {
       alert('載入範例失敗');
       selectedExampleRef.current = 'custom';
-      setSelectedCategory('custom');
-      setSelectedExample('');
+      dispatch({ type: 'SET_EXAMPLE_SELECTION', category: 'custom', exampleId: '' });
       isLoadingExample.current = false;
     }
   };
@@ -148,8 +145,7 @@ export default function EditPanel() {
       const data = await importFromFile();
       isLoadingExample.current = true;
       dispatch({ type: 'LOAD_STATE', gridSize: data.gridSize, grid: data.grid });
-      setSelectedCategory('custom');
-      setSelectedExample('');
+      dispatch({ type: 'SET_EXAMPLE_SELECTION', category: 'custom', exampleId: '' });
     } catch (err) {
       alert(`匯入失敗：${err instanceof Error ? err.message : '未知錯誤'}`);
     }

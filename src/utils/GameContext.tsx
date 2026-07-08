@@ -23,6 +23,8 @@ function loadInitialState(): GameState {
     placedPieces: [],
     selectedTool: Tool.SingleSelect,
     boardName: '自訂版面',
+    selectedCategory: 'custom',
+    selectedExampleId: '',
     autoConditions: { useBasicShapes: true, useBig7: false, useBig7Colors: ['blue','red','green','yellow','purple'], useWild: false, maxWildCells: 8, requireBig7: false, requiredBig7Colors: [] },
     autoResults: [],
     selectedAutoResult: null,
@@ -40,6 +42,8 @@ function loadInitialState(): GameState {
       placedPieces: data.placedPieces || [],
       selectedTool: data.selectedTool || Tool.SingleSelect,
       boardName: data.boardName || '自訂版面',
+      selectedCategory: data.selectedCategory || 'custom',
+      selectedExampleId: data.selectedExampleId || '',
       autoConditions: { ...defaultState.autoConditions, ...data.autoConditions },
       // 不還原 autoResults 和 selectedAutoResult（需重新計算）
       autoResults: [],
@@ -66,6 +70,7 @@ type Action =
   | { type: 'SELECT_AUTO_RESULT'; index: number | null }
   | { type: 'LOAD_STATE'; gridSize: GridSize; grid: CellState[][]; placedPieces?: PlacedPiece[]; boardName?: string }
   | { type: 'SET_BOARD_NAME'; name: string }
+  | { type: 'SET_EXAMPLE_SELECTION'; category: string; exampleId: string }
   | { type: 'RANDOMIZE_COLORS' };
 
 function reducer(state: GameState, action: Action): GameState {
@@ -157,6 +162,9 @@ function reducer(state: GameState, action: Action): GameState {
     case 'SET_BOARD_NAME':
       return { ...state, boardName: action.name.slice(0, 30) };
 
+    case 'SET_EXAMPLE_SELECTION':
+      return { ...state, selectedCategory: action.category, selectedExampleId: action.exampleId };
+
     case 'RANDOMIZE_COLORS': {
       const colors: PuzzleColor[] = [
         PuzzleColor.Blue, PuzzleColor.Red, PuzzleColor.Green,
@@ -200,6 +208,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         placedPieces: s.placedPieces,
         selectedTool: s.selectedTool,
         boardName: s.boardName,
+        selectedCategory: s.selectedCategory,
+        selectedExampleId: s.selectedExampleId,
         autoConditions: s.autoConditions,
       };
       try {
@@ -222,6 +232,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         placedPieces: s.placedPieces,
         selectedTool: s.selectedTool,
         boardName: s.boardName,
+        selectedCategory: s.selectedCategory,
+        selectedExampleId: s.selectedExampleId,
         autoConditions: s.autoConditions,
       };
       try {
