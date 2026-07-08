@@ -724,6 +724,19 @@ export default function PuzzlePanel() {
                 ))}
               </div>
             )}
+
+            <button
+              onClick={() => {
+                if ((placedPieces.length === 0 && autoResults.length === 0) || confirm('確定清空所有拼圖與候選組合？')) {
+                  dispatch({ type: 'SET_PLACED_PIECES', pieces: [] });
+                  dispatch({ type: 'SET_AUTO_RESULTS', results: [] });
+                  setSelectedPlacedPiece(null);
+                }
+              }}
+              style={{ ...btnStyle, width: '100%', backgroundColor: '#ffdddd' }}
+            >
+              🗑️ 清空拼圖
+            </button>
           </div>
         )}
 
