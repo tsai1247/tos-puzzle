@@ -363,21 +363,16 @@ export default function PuzzlePanel() {
   };
 
   const handleExportImage = () => {
-    const gridEl = document.getElementById('puzzle-export');
+    const gridEl = document.getElementById('puzzle-grid');
     if (!gridEl) return;
-    // 暫時縮小寬度以減少留白
-    const originalWidth = gridEl.style.width;
-    gridEl.style.width = 'fit-content';
     import('html2canvas').then(({ default: html2canvas }) => {
       html2canvas(gridEl).then(canvas => {
-        gridEl.style.width = originalWidth;
         const link = document.createElement('a');
-        link.download = `${state.boardName || 'puzzle'}.png`;
+        link.download = `puzzle_${gridSize}x${gridSize}_${Date.now()}.png`;
         link.href = canvas.toDataURL();
         link.click();
       });
     }).catch(() => {
-      gridEl.style.width = originalWidth;
       alert('匯出圖片需要 html2canvas 套件');
     });
   };
@@ -401,27 +396,25 @@ export default function PuzzlePanel() {
     }}>
       {/* 左側：拼圖板 */}
       <div style={{ flex: '1 1 300px', minWidth: 0 }}>
-        {/* 匯出區域（包含標題和拼圖） */}
-        <div id="puzzle-export" style={{ width: '100%' }}>
-          {/* 版面名稱 */}
-          <div style={{ marginBottom: 6 }}>
-            <input
-              type="text"
-              value={state.boardName}
-              onChange={e => dispatch({ type: 'SET_BOARD_NAME', name: e.target.value })}
-              maxLength={30}
-              style={{
-                fontSize: 'clamp(14px, 3vw, 16px)',
-                fontWeight: 'bold',
-                border: 'none',
-                borderBottom: '1px solid #ccc',
-                background: 'transparent',
-                padding: '2px 4px',
-                width: '100%',
-                maxWidth: 300,
-              }}
-            />
-          </div>
+        {/* 版面名稱 */}
+        <div style={{ marginBottom: 6 }}>
+          <input
+            type="text"
+            value={state.boardName}
+            onChange={e => dispatch({ type: 'SET_BOARD_NAME', name: e.target.value })}
+            maxLength={30}
+            style={{
+              fontSize: 'clamp(14px, 3vw, 16px)',
+              fontWeight: 'bold',
+              border: 'none',
+              borderBottom: '1px solid #ccc',
+              background: 'transparent',
+              padding: '2px 4px',
+              width: '100%',
+              maxWidth: 300,
+            }}
+          />
+        </div>
         {/* 統計 + 隨機換色 */}
         <div style={{
           display: 'flex',
@@ -468,7 +461,6 @@ export default function PuzzlePanel() {
             onChangeColor={handleChangeColor}
           />
         </div>
-        </div>{/* close puzzle-export */}
       </div>
 
       {/* 右側：控制面板 */}
