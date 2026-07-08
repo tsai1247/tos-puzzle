@@ -156,9 +156,20 @@ export default function EditPanel() {
     if (selectedCategory !== 'custom' && selectedExample) {
       const cat = EXAMPLE_CATEGORIES.find(c => c.id === selectedCategory);
       const item = cat?.items.find(i => i.id === selectedExample);
-      if (item && exampleCache[selectedExample]) {
+      if (item) {
+        // 確保 cache 有資料
+        if (!exampleCache[selectedExample]) {
+          try {
+            const res = await fetch(`${import.meta.env.BASE_URL}examples/${item.file}`);
+            const encoded = await res.text();
+            const data = decodeData(encoded);
+            exampleCache[selectedExample] = data as typeof exampleCache[string];
+          } catch {
+            // 載入失敗，直接進入拼圖
+          }
+        }
         const data = exampleCache[selectedExample];
-        if (data.placedPieces && (data.placedPieces as unknown[]).length > 0) {
+        if (data && data.placedPieces && (data.placedPieces as unknown[]).length > 0) {
           dispatch({
             type: 'LOAD_STATE',
             gridSize: data.gridSize as GridSize,
